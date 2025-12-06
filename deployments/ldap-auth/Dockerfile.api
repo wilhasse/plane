@@ -1,0 +1,18 @@
+# Custom Plane API image with LDAP authentication built-in
+#
+# Build:
+#   docker build -f Dockerfile.api -t plane-api-ldap:latest .
+#
+# Use in docker-compose.ldap.yml:
+#   api:
+#     image: plane-api-ldap:latest
+#
+
+ARG PLANE_VERSION=stable
+FROM artifacts.plane.so/makeplane/plane-backend:${PLANE_VERSION}
+
+# Install ldap3 library
+RUN pip install --no-cache-dir ldap3
+
+# Copy LDAP-enabled authentication module
+COPY email_ldap.py /code/plane/authentication/provider/credentials/email.py

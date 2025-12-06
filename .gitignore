@@ -112,3 +112,4 @@ build/
 AGENTS.md
 temp/
 scripts/
+deployments/.env
