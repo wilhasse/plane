@@ -1,5 +1,6 @@
 # Python imports
 import os
+import logging
 
 # Module imports
 from plane.authentication.adapter.credential import CredentialAdapter
@@ -9,6 +10,68 @@ from plane.authentication.adapter.error import (
     AuthenticationException,
 )
 from plane.license.utils.instance_value import get_configuration_value
+
+logger = logging.getLogger(__name__)
+
+# LDAP Configuration - loaded from environment
+LDAP_ENABLED = os.environ.get("LDAP_ENABLED", "1") == "1"
+LDAP_SERVER = os.environ.get("LDAP_SERVER", "192.168.20.5")
+LDAP_PORT = int(os.environ.get("LDAP_PORT", "389"))
+LDAP_DOMAIN = os.environ.get("LDAP_DOMAIN", "cslog.local")
+
+
+def verify_ldap_password(email: str, password: str) -> bool:
+    """
+    Verify user credentials against LDAP/Active Directory.
+    Returns True if authentication successful, False otherwise.
+    """
+    if not LDAP_ENABLED:
+        return False
+
+    try:
+        from ldap3 import Server, Connection, ALL
+
+        username = email.split("@")[0]
+        server = Server(LDAP_SERVER, port=LDAP_PORT, get_info=ALL)
+
+        # Try UPN format (user@domain)
+        try:
+            conn = Connection(
+                server,
+                user=f"{username}@{LDAP_DOMAIN}",
+                password=password,
+                auto_bind=True
+            )
+            conn.unbind()
+            logger.info(f"LDAP auth successful for {email}")
+            return True
+        except Exception:
+            pass
+
+        # Try DOMAIN\user format
+        try:
+            domain_short = LDAP_DOMAIN.split(".")[0].upper()
+            conn = Connection(
+                server,
+                user=f"{domain_short}\\{username}",
+                password=password,
+                auto_bind=True
+            )
+            conn.unbind()
+            logger.info(f"LDAP auth successful for {email}")
+            return True
+        except Exception:
+            pass
+
+        logger.warning(f"LDAP auth failed for {email}")
+        return False
+
+    except ImportError:
+        logger.error("ldap3 library not installed")
+        return False
+    except Exception as e:
+        logger.error(f"LDAP error for {email}: {e}")
+        return False
 
 
 class EmailProvider(CredentialAdapter):
@@ -68,8 +131,20 @@ class EmailProvider(CredentialAdapter):
                     payload={"email": self.key},
                 )
 
-            # Check user password
-            if not user.check_password(self.code):
+            # ===========================================
+            # MODIFIED: Check LDAP first, then fall back to local password
+            # ===========================================
+            auth_success = False
+
+            # Try LDAP authentication first
+            if LDAP_ENABLED:
+                auth_success = verify_ldap_password(self.key, self.code)
+
+            # Fall back to local password if LDAP fails or is disabled
+            if not auth_success:
+                auth_success = user.check_password(self.code)
+
+            if not auth_success:
                 raise AuthenticationException(
                     error_message=(
                         "AUTHENTICATION_FAILED_SIGN_UP" if self.is_signup else "AUTHENTICATION_FAILED_SIGN_IN"
