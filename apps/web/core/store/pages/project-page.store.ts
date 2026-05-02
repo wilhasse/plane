@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
 import { unset, set } from "lodash-es";
 import { makeObservable, observable, runInAction, action, reaction, computed } from "mobx";
 import { computedFn } from "mobx-utils";
@@ -217,7 +223,7 @@ export class ProjectPageStore implements IProjectPageStore {
             const existingPage = this.getPageById(page.id);
             if (existingPage) {
               // If page already exists, update all fields except name
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
               const { name, ...otherFields } = page;
               existingPage.mutateProperties(otherFields, false);
             } else {
@@ -322,7 +328,7 @@ export class ProjectPageStore implements IProjectPageStore {
    * @description delete a page
    * @param {string} pageId
    */
-  removePage = async ({ pageId, shouldSync = true }: { pageId: string; shouldSync?: boolean }) => {
+  removePage = async ({ pageId, shouldSync: _shouldSync = true }: { pageId: string; shouldSync?: boolean }) => {
     try {
       const { workspaceSlug, projectId } = this.store.router;
       if (!workspaceSlug || !projectId || !pageId) return undefined;

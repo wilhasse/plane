@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
 import { action, computed, makeObservable, observable } from "mobx";
 // types
 import type {
@@ -17,7 +23,6 @@ import type {
   IIssueActivityStoreActions,
   TActivityLoader,
 } from "@/plane-web/store/issue/issue-details/activity.store";
-import type { RootStore } from "@/plane-web/store/root.store";
 import type { TIssueRelationTypes } from "@/plane-web/types";
 import type { IIssueRootStore } from "../root.store";
 import { IssueAttachmentStore } from "./attachment.store";
@@ -207,7 +212,7 @@ export abstract class IssueDetail implements IIssueDetail {
     this.issue = new IssueStore(this, serviceType);
     this.reaction = new IssueReactionStore(this, serviceType);
     this.attachment = new IssueAttachmentStore(rootStore, serviceType);
-    this.activity = new IssueActivityStore(rootStore.rootStore as RootStore, serviceType);
+    this.activity = new IssueActivityStore(rootStore.rootStore, serviceType);
     this.comment = new IssueCommentStore(this, serviceType);
     this.commentReaction = new IssueCommentReactionStore(this);
     this.subIssues = new IssueSubIssuesStore(this, serviceType);

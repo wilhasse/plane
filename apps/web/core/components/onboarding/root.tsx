@@ -1,14 +1,17 @@
-import type { FC } from "react";
+/**
+ * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
-import { USER_TRACKER_EVENTS } from "@plane/constants";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { IWorkspaceMemberInvitation, TOnboardingStep, TOnboardingSteps, TUserProfile } from "@plane/types";
 import { EOnboardingSteps } from "@plane/types";
-// helpers
-import { captureSuccess } from "@/helpers/event-tracker.helper";
 // hooks
+import { useInstance } from "@/hooks/store/use-instance";
 import { useWorkspace } from "@/hooks/store/use-workspace";
 import { useUser, useUserProfile } from "@/hooks/store/user";
 // local components
@@ -25,8 +28,10 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
   const { data: user } = useUser();
   const { data: userProfile, updateUserProfile, finishUserOnboarding } = useUserProfile();
   const { workspaces } = useWorkspace();
+  const { config: instanceConfig } = useInstance();
 
   const workspacesList = Object.values(workspaces ?? {});
+  const isSelfManaged = instanceConfig?.is_self_managed;
 
   // Calculate total steps based on whether invitations are available
   const hasInvitations = invitations.length > 0;
@@ -34,24 +39,15 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
   // complete onboarding
   const finishOnboarding = useCallback(async () => {
     if (!user) return;
-
-    await finishUserOnboarding()
-      .then(() => {
-        captureSuccess({
-          eventName: USER_TRACKER_EVENTS.onboarding_complete,
-          payload: {
-            email: user.email,
-            user_id: user.id,
-          },
-        });
-      })
-      .catch(() => {
-        setToast({
-          type: TOAST_TYPE.ERROR,
-          title: "Failed",
-          message: "Failed to finish onboarding, Please try again later.",
-        });
+    try {
+      await finishUserOnboarding();
+    } catch (_error) {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Failed",
+        message: "Failed to finish onboarding, Please try again later.",
       });
+    }
   }, [user, finishUserOnboarding]);
 
   // handle step change
@@ -75,7 +71,14 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
     (step: EOnboardingSteps, skipInvites?: boolean) => {
       switch (step) {
         case EOnboardingSteps.PROFILE_SETUP:
-          setCurrentStep(EOnboardingSteps.ROLE_SETUP);
+          if (isSelfManaged) {
+            // Skip role & use case steps for self-hosted
+            stepChange({ profile_complete: true });
+            if (workspacesList.length > 0) finishOnboarding();
+            else setCurrentStep(EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN);
+          } else {
+            setCurrentStep(EOnboardingSteps.ROLE_SETUP);
+          }
           break;
         case EOnboardingSteps.ROLE_SETUP:
           setCurrentStep(EOnboardingSteps.USE_CASE_SETUP);
@@ -98,7 +101,7 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
           break;
       }
     },
-    [stepChange, finishOnboarding, workspacesList]
+    [stepChange, finishOnboarding, workspacesList, isSelfManaged]
   );
 
   const updateCurrentStep = (step: EOnboardingSteps) => setCurrentStep(step);
@@ -126,7 +129,7 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Header with progress */}
       <OnboardingHeader
         currentStep={currentStep}

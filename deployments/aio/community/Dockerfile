@@ -6,12 +6,12 @@ FROM --platform=$BUILDPLATFORM tonistiigi/binfmt AS binfmt
 # **************************************************
 FROM node:22-alpine AS node
 
-FROM artifacts.plane.so/makeplane/plane-frontend:${PLANE_VERSION} AS web-img
-FROM artifacts.plane.so/makeplane/plane-backend:${PLANE_VERSION} AS backend-img
-FROM artifacts.plane.so/makeplane/plane-space:${PLANE_VERSION} AS space-img
-FROM artifacts.plane.so/makeplane/plane-admin:${PLANE_VERSION} AS admin-img
-FROM artifacts.plane.so/makeplane/plane-live:${PLANE_VERSION} AS live-img
-FROM artifacts.plane.so/makeplane/plane-proxy:${PLANE_VERSION} AS proxy-img
+FROM makeplane/plane-frontend:${PLANE_VERSION} AS web-img
+FROM makeplane/plane-backend:${PLANE_VERSION} AS backend-img
+FROM makeplane/plane-space:${PLANE_VERSION} AS space-img
+FROM makeplane/plane-admin:${PLANE_VERSION} AS admin-img
+FROM makeplane/plane-live:${PLANE_VERSION} AS live-img
+FROM makeplane/plane-proxy:${PLANE_VERSION} AS proxy-img
 
 # **************************************************
 #  STAGE 1: Runner
@@ -31,14 +31,12 @@ COPY --from=node /usr/local/lib /usr/local/lib
 COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
-COPY --from=web-img /app /app/web
+COPY --from=web-img /usr/share/nginx/html /app/web
 COPY --from=space-img /app /app/space
-COPY --from=admin-img /app /app/admin
+COPY --from=admin-img /usr/share/nginx/html/god-mode /app/admin
 COPY --from=live-img /app /app/live
 
-RUN rm -rf /app/web/apps/web/.next/cache && \
-    rm -rf /app/space/apps/space/.next/cache && \
-    rm -rf /app/admin/apps/admin/.next/cache
+RUN rm -rf /app/space/apps/space/.next/cache
 
 COPY --from=proxy-img /usr/bin/caddy /usr/bin/caddy
 COPY dist/Caddyfile /app/proxy/Caddyfile

@@ -1,3 +1,7 @@
+# Copyright (c) 2023-present Plane Software, Inc. and contributors
+# SPDX-License-Identifier: AGPL-3.0-only
+# See the LICENSE file for details.
+
 # Python imports
 import os
 
@@ -44,6 +48,12 @@ google_config_variables = [
         "category": "GOOGLE",
         "is_encrypted": True,
     },
+    {
+        "key": "ENABLE_GOOGLE_SYNC",
+        "value": os.environ.get("ENABLE_GOOGLE_SYNC", "0"),
+        "category": "GOOGLE",
+        "is_encrypted": False,
+    },
 ]
 
 github_config_variables = [
@@ -62,6 +72,12 @@ github_config_variables = [
     {
         "key": "GITHUB_ORGANIZATION_ID",
         "value": os.environ.get("GITHUB_ORGANIZATION_ID"),
+        "category": "GITHUB",
+        "is_encrypted": False,
+    },
+    {
+        "key": "ENABLE_GITHUB_SYNC",
+        "value": os.environ.get("ENABLE_GITHUB_SYNC", "0"),
         "category": "GITHUB",
         "is_encrypted": False,
     },
@@ -86,6 +102,12 @@ gitlab_config_variables = [
         "value": os.environ.get("GITLAB_CLIENT_SECRET"),
         "category": "GITLAB",
         "is_encrypted": True,
+    },
+    {
+        "key": "ENABLE_GITLAB_SYNC",
+        "value": os.environ.get("ENABLE_GITLAB_SYNC", "0"),
+        "category": "GITLAB",
+        "is_encrypted": False,
     },
 ]
 
@@ -113,6 +135,12 @@ gitea_config_variables = [
         "value": os.environ.get("GITEA_CLIENT_SECRET"),
         "category": "GITEA",
         "is_encrypted": True,
+    },
+    {
+        "key": "ENABLE_GITEA_SYNC",
+        "value": os.environ.get("ENABLE_GITEA_SYNC", "0"),
+        "category": "GITEA",
+        "is_encrypted": False,
     },
 ]
 
@@ -204,21 +232,6 @@ unsplash_config_variables = [
     },
 ]
 
-intercom_config_variables = [
-    {
-        "key": "IS_INTERCOM_ENABLED",
-        "value": os.environ.get("IS_INTERCOM_ENABLED", "1"),
-        "category": "INTERCOM",
-        "is_encrypted": False,
-    },
-    {
-        "key": "INTERCOM_APP_ID",
-        "value": os.environ.get("INTERCOM_APP_ID", ""),
-        "category": "INTERCOM",
-        "is_encrypted": False,
-    },
-]
-
 core_config_variables = [
     *authentication_config_variables,
     *workspace_management_config_variables,
@@ -229,5 +242,4 @@ core_config_variables = [
     *smtp_config_variables,
     *llm_config_variables,
     *unsplash_config_variables,
-    *intercom_config_variables,
 ]
