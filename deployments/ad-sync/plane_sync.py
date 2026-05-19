@@ -17,7 +17,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'plane.settings.production')
 import django
 django.setup()
 
-from plane.db.models import User
+from plane.db.models import Profile, User
 
 
 def generate_temp_password():
@@ -52,9 +52,12 @@ def sync_user(user_data, dry_run=False):
 
         if updated and not dry_run:
             user.save()
+            Profile.objects.get_or_create(user=user)
             return {'status': 'updated', 'email': email, 'changes': changes}
         elif updated:
             return {'status': 'would_update', 'email': email, 'changes': changes}
+        if not dry_run:
+            Profile.objects.get_or_create(user=user)
         return {'status': 'unchanged', 'email': email}
 
     except User.DoesNotExist:
@@ -75,6 +78,7 @@ def sync_user(user_data, dry_run=False):
         )
         user.set_password(temp_password)
         user.save()
+        Profile.objects.create(user=user)
 
         return {
             'status': 'created',

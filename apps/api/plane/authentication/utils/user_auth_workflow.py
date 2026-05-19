@@ -2,8 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+from plane.db.models import Profile
+
 from .workspace_project_join import process_workspace_project_invitations
 
 
 def post_user_auth_workflow(user, is_signup, request):
+    Profile.objects.get_or_create(user=user)
     process_workspace_project_invitations(user=user)
